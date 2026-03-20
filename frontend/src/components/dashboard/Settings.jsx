@@ -5,6 +5,8 @@ import { Settings as SettingsIcon, Key, User, Mail, Phone, Check } from 'lucide-
 const Settings = () => {
   const [editingField, setEditingField] = useState(null);
   const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleUpdateUsername = async (e) => {
@@ -13,7 +15,12 @@ const Settings = () => {
 
     setLoading(true);
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        alert('User session not found. Please login again.');
+        return;
+      }
+      const user = JSON.parse(userData);
       const response = await axios.post('http://localhost:8000/api/accounts/update-username/', {
         new_username: newUsername,
         user_id: user.id
@@ -30,6 +37,79 @@ const Settings = () => {
     } catch (error) {
       console.error('Update username error:', error.response?.data || error.message);
       alert(error.response?.data?.error || 'Failed to update username');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateEmail = async (e) => {
+    e.preventDefault();
+    if (!newEmail.trim()) return;
+
+    setLoading(true);
+    try {
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        alert('User session not found. Please login again.');
+        return;
+      }
+      const user = JSON.parse(userData);
+      const response = await axios.post('http://localhost:8000/api/accounts/update-email/', {
+        new_email: newEmail,
+        user_id: user.id
+      });
+
+      // Update local storage
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      alert('Email updated successfully!');
+      setEditingField(null);
+      setNewEmail('');
+      
+      // Refresh the page to reflect changes in header
+      window.location.reload();
+    } catch (error) {
+      console.error('Update email error:', error.response?.data || error.message);
+      alert(error.response?.data?.error || 'Failed to update email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePhone = async (e) => {
+    e.preventDefault();
+    if (!newPhone.trim()) return;
+
+    // Validation: only numbers and exactly 10 digits
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(newPhone)) {
+      alert('Phone number must be exactly 10 digits and contain only numbers');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        alert('User session not found. Please login again.');
+        return;
+      }
+      const user = JSON.parse(userData);
+      const response = await axios.post('http://localhost:8000/api/accounts/update-phone/', {
+        new_phone: newPhone,
+        user_id: user.id
+      });
+
+      // Update local storage
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      alert('Phone number updated successfully!');
+      setEditingField(null);
+      setNewPhone('');
+      
+      // Refresh the page to reflect changes
+      window.location.reload();
+    } catch (error) {
+      console.error('Update phone error:', error.response?.data || error.message);
+      alert(error.response?.data?.error || 'Failed to update phone number');
     } finally {
       setLoading(false);
     }
@@ -114,7 +194,75 @@ const Settings = () => {
             </div>
           )}
 
-          {editingField && editingField !== 'username' && (
+          {editingField === 'email' && (
+            <div className="mt-8 p-6 bg-green-50 rounded-2xl border border-green-100 animate-in zoom-in-95 duration-300">
+              <h4 className="font-bold text-green-900 mb-4 flex items-center">
+                <Mail size={18} className="mr-2" />
+                Change Your Email ID
+              </h4>
+              <form onSubmit={handleUpdateEmail} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="Enter new email address"
+                  className="flex-1 px-4 py-3 rounded-xl border border-green-200 focus:ring-2 focus:ring-green-500 outline-none transition-all font-medium"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-green-200 transition-all flex items-center justify-center disabled:opacity-50"
+                >
+                  {loading ? 'Updating...' : (
+                    <>
+                      <Check size={18} className="mr-2" />
+                      Done
+                    </>
+                  )}
+                </button>
+              </form>
+              <p className="mt-3 text-xs text-green-600 font-medium italic">
+                Note: This email will be used for all future communications.
+              </p>
+            </div>
+           )}
+
+          {editingField === 'phone' && (
+            <div className="mt-8 p-6 bg-purple-50 rounded-2xl border border-purple-100 animate-in zoom-in-95 duration-300">
+              <h4 className="font-bold text-purple-900 mb-4 flex items-center">
+                <Phone size={18} className="mr-2" />
+                Change Your Phone Number
+              </h4>
+              <form onSubmit={handleUpdatePhone} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="tel"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="Enter new phone number"
+                  className="flex-1 px-4 py-3 rounded-xl border border-purple-200 focus:ring-2 focus:ring-purple-500 outline-none transition-all font-medium"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-purple-200 transition-all flex items-center justify-center disabled:opacity-50"
+                >
+                  {loading ? 'Updating...' : (
+                    <>
+                      <Check size={18} className="mr-2" />
+                      Done
+                    </>
+                  )}
+                </button>
+              </form>
+              <p className="mt-3 text-xs text-purple-600 font-medium italic">
+                Note: This will be your primary contact number.
+              </p>
+            </div>
+          )}
+ 
+           {editingField && editingField !== 'username' && editingField !== 'email' && editingField !== 'phone' && (
             <div className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-100 text-center">
               <p className="text-gray-500 font-medium">The {editingField} update feature is coming soon!</p>
             </div>

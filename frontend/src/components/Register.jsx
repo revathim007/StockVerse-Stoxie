@@ -10,6 +10,7 @@ const Register = () => {
     email: '',
     password: '',
     mpin: '',
+    phoneNumber: '',
   });
   const navigate = useNavigate();
 
@@ -29,6 +30,14 @@ const Register = () => {
       if (role === 'customer') {
         payload.email = formData.email;
         payload.mpin = formData.mpin;
+        payload.phone_number = formData.phoneNumber;
+
+        // Phone Validation
+        const phoneRegex = /^[0-9]{10}$/;
+        if (payload.phone_number && !phoneRegex.test(payload.phone_number)) {
+          alert('Phone number must be exactly 10 digits and contain only numbers');
+          return;
+        }
       }
       
       await axios.post('http://localhost:8000/api/accounts/register/', payload);
@@ -114,6 +123,21 @@ const Register = () => {
               onChange={handleChange}
             />
           </div>
+
+          {role === 'customer' && (
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
+              <input
+                type="tel"
+                name="phoneNumber"
+                maxLength="10"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                placeholder="Enter 10-digit Phone Number"
+                required
+                onChange={handleChange}
+              />
+            </div>
+          )}
 
           {role === 'customer' && (
             <div className="mb-6">

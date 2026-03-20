@@ -9,6 +9,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
     full_name = models.CharField(max_length=255)
     mpin = models.CharField(max_length=6, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     custom_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
 
     def save(self, *args, **kwargs):
