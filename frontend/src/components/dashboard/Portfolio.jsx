@@ -13,15 +13,20 @@ const Portfolio = () => {
   const [selectedStocks, setSelectedStocks] = useState([]);
   const [addingToCollection, setAddingToCollection] = useState({});
   const [portfolioSearch, setPortfolioSearch] = useState('');
+  const [allStocks, setAllStocks] = useState([]);
 
   const fetchPortfolios = async () => {
     setLoading(true);
     try {
       const userData = JSON.parse(localStorage.getItem('user'));
-      const response = await axios.get(`http://localhost:8000/api/stocks/portfolios/?user_id=${userData.id}`);
-      setPortfolios(response.data);
+      const [portfoliosRes, stocksRes] = await Promise.all([
+        axios.get(`http://localhost:8000/api/stocks/portfolios/?user_id=${userData.id}`),
+        axios.get(`http://localhost:8000/api/stocks/`)
+      ]);
+      setPortfolios(portfoliosRes.data);
+      setAllStocks(stocksRes.data);
     } catch (error) {
-      console.error('Error fetching portfolios:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -157,6 +162,27 @@ const Portfolio = () => {
     }, {});
   };
 
+  const getBuiltInPortfolios = () => {
+    const sectors = {};
+    allStocks.forEach(stock => {
+      const sector = stock.sector || 'Others';
+      if (!sectors[sector]) {
+        sectors[sector] = [];
+      }
+      sectors[sector].push({ stock, quantity: 1 });
+    });
+
+    return Object.entries(sectors).map(([sector, items], index) => ({
+      id: `builtin-${index}`,
+      portfolio_id: `BI-${index}`,
+      name: `${sector} Portfolio`,
+      description: `Automatically generated portfolio for the ${sector} sector.`,
+      items,
+      isBuiltIn: true,
+      created_at: new Date().toISOString()
+    }));
+  };
+
   const getPortfolioColor = (index) => {
     const colors = [
       { border: 'border-blue-100', bg: 'bg-blue-50', text: 'text-blue-600' },
@@ -171,6 +197,10 @@ const Portfolio = () => {
 
   const filteredPortfolios = portfolios.filter(portfolio =>
     portfolio.name.toLowerCase().includes(portfolioSearch.toLowerCase())
+  );
+
+  const builtInPortfolios = getBuiltInPortfolios().filter(p => 
+    p.name.toLowerCase().includes(portfolioSearch.toLowerCase())
   );
 
   if (loading) {
@@ -204,6 +234,76 @@ const Portfolio = () => {
         </div>
       </header>
 
+      {/* Built-in Portfolios Section */}
+      {builtInPortfolios.length > 0 && (
+        <div className="mb-12">
+          <div className="flex items-center space-x-2 mb-6">
+            <Layers className="text-green-600" size={24} />
+            <h2 className="text-2xl font-black text-gray-900">System Portfolios</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {builtInPortfolios.map((portfolio, index) => {
+              const cardColor = getPortfolioColor(index + 3); // Start from a different color
+              return (
+                <div key={portfolio.id} className={`bg-white rounded-[2rem] shadow-xl border ${cardColor.border} overflow-hidden group hover:shadow-2xl transition-all duration-300 flex flex-col`}>
+                  <div className="p-8 flex-1">
+                    <div className="flex justify-between items-start mb-6">
+                      <span className={`px-3 py-1 ${cardColor.bg} ${cardColor.text} text-[10px] font-black rounded-lg uppercase tracking-widest`}>
+                        BUILT-IN
+                      </span>
+                    </div>
+                    
+                    <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-green-600 transition-colors">
+                      {portfolio.name}
+                    </h3>
+                    
+                    <p className="text-gray-500 text-xs font-medium mb-4 line-clamp-2">
+                      {portfolio.description}
+                    </p>
+
+                    <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {portfolio.items.map((item) => (
+                            <div key={item.stock.id} className="flex items-center space-x-1 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-100">
+                              <span className="text-[10px] font-black text-gray-900 uppercase">
+                                {item.stock.symbol.split('.')[0]}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="px-8 pb-8">
+                    <button 
+                      onClick={() => handleBulkAddToCollection(portfolio)}
+                      disabled={addingToCollection[portfolio.id]}
+                      className="w-full bg-gray-900 text-white hover:bg-green-600 p-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center"
+                    >
+                      {addingToCollection[portfolio.id] ? (
+                        <span className="flex items-center">
+                          <Layers size={14} className="animate-spin mr-2" />
+                          Adding...
+                        </span>
+                      ) : (
+                        'Add Entire Sector to Collection'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* User Portfolios Section */}
+      <div className="flex items-center space-x-2 mb-6 mt-12">
+        <Briefcase className="text-blue-600" size={24} />
+        <h2 className="text-2xl font-black text-gray-900">Custom Portfolios</h2>
+      </div>
       {filteredPortfolios.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPortfolios.map((portfolio, index) => {
