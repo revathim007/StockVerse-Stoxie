@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Briefcase, Layers, TrendingUp, Calendar, Trash2, Plus, Search, X } from 'lucide-react';
@@ -11,6 +12,7 @@ const Portfolio = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [selectedStocks, setSelectedStocks] = useState([]);
   const [addingToCollection, setAddingToCollection] = useState({});
+  const [portfolioSearch, setPortfolioSearch] = useState('');
 
   const fetchPortfolios = async () => {
     setLoading(true);
@@ -156,6 +158,10 @@ const Portfolio = () => {
     return colors[index % colors.length];
   };
 
+  const filteredPortfolios = portfolios.filter(portfolio =>
+    portfolio.name.toLowerCase().includes(portfolioSearch.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -173,20 +179,23 @@ const Portfolio = () => {
           <h1 className="text-4xl font-extrabold text-gray-900">Your Portfolios</h1>
           <p className="text-gray-500 mt-2 font-medium">Manage and track your custom stock collections.</p>
         </div>
-        <div className="bg-white px-8 py-4 rounded-3xl shadow-xl border border-gray-100 flex items-center space-x-4">
-          <div className="bg-green-100 p-3 rounded-2xl text-green-600">
-            <Briefcase size={24} />
-          </div>
-          <div>
-            <span className="text-gray-400 text-xs font-black uppercase tracking-widest">Total Portfolios</span>
-            <div className="text-2xl font-black text-gray-900">{portfolios.length}</div>
+        <div className="relative">
+          <input
+            type="text"
+            value={portfolioSearch}
+            onChange={(e) => setPortfolioSearch(e.target.value)}
+            placeholder="Search portfolios..."
+            className="border border-gray-300 rounded-md px-4 py-2 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-purple-600"
+          />
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <Search className="text-gray-400" size={18} />
           </div>
         </div>
       </header>
 
-      {portfolios.length > 0 ? (
+      {filteredPortfolios.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {portfolios.map((portfolio, index) => {
+          {filteredPortfolios.map((portfolio, index) => {
             const cardColor = getPortfolioColor(index);
             return (
               <div key={portfolio.id} className={`bg-white rounded-[2rem] shadow-xl border ${cardColor.border} overflow-hidden group hover:shadow-2xl transition-all duration-300 flex flex-col`}>

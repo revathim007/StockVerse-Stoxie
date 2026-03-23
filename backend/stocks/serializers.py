@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Stock, Portfolio, Collection, Purchase, PortfolioItem
+from accounts.models import User
 
 class StockSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,16 +19,16 @@ class PortfolioSerializer(serializers.ModelSerializer):
     items = PortfolioItemSerializer(many=True, read_only=True)
     # stocks_data will handle the input list of {stock_id, quantity}
     stocks_data = serializers.ListField(
-        child=serializers.DictField(), write_only=True
+        child=serializers.DictField(), write_only=True, required=False
     )
 
     class Meta:
         model = Portfolio
-        fields = ['id', 'portfolio_id', 'name', 'items', 'stocks_data', 'created_at']
+        fields = ['id', 'portfolio_id', 'name', 'description', 'items', 'stocks_data', 'created_at']
         read_only_fields = ['portfolio_id', 'created_at']
 
     def create(self, validated_data):
-        stocks_data = validated_data.pop('stocks_data')
+        stocks_data = validated_data.pop('stocks_data', [])
         portfolio = Portfolio.objects.create(**validated_data)
         for item in stocks_data:
             stock = Stock.objects.get(id=item['stock_id'])
@@ -41,6 +42,7 @@ class PortfolioSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         stocks_data = validated_data.pop('stocks_data', None)
         instance.name = validated_data.get('name', instance.name)
+        instance.description = validated_data.get('description', instance.description)
         instance.save()
         
         if stocks_data is not None:
@@ -57,17 +59,24 @@ class PortfolioSerializer(serializers.ModelSerializer):
 class CollectionSerializer(serializers.ModelSerializer):
     stock = StockSerializer(read_only=True)
     stock_id = serializers.IntegerField(write_only=True)
+    user_id = serializers.IntegerField(write_only=True)
+    portfolio_name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = Collection
-        fields = ['id', 'stock', 'stock_id', 'added_at']
+        fields = ['id', 'stock', 'stock_id', 'user_id', 'portfolio_name', 'added_at']
 
     def create(self, validated_data):
         stock_id = validated_data.pop('stock_id')
+        user_id = validated_data.pop('user_id')
+        portfolio_name = validated_data.get('portfolio_name')
         stock = Stock.objects.get(id=stock_id)
-        collection, created = Collection.objects.get_or_create(
-            user=validated_data['user'],
-            stock=stock
+        user = User.objects.get(id=user_id)
+        
+        collection, created = Collection.objects.update_or_create(
+            user=user,
+            stock=stock,
+            defaults={'portfolio_name': portfolio_name}
         )
         return collection
 

@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, ArrowUpRight, TrendingUp, RefreshCw, BarChart3, Percent, DollarSign, IndianRupee, Plus, Check } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Stock = () => {
   const [loading, setLoading] = useState(false);
@@ -12,7 +13,9 @@ const Stock = () => {
   const [selectedStock, setSelectedStock] = useState(null);
   const [historyData, setHistoryData] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(null);
   const [isInCollection, setIsInCollection] = useState(false);
+  const [period, setPeriod] = useState('1y');
 
   const checkIfInCollection = async (stockId) => {
     try {
@@ -45,18 +48,26 @@ const Stock = () => {
     }
   };
 
-  const fetchStockDetails = async (stock) => {
+  const fetchStockDetails = async (stock, selectedPeriod) => {
     setHistoryLoading(true);
+    setHistoryError(null);
     try {
-      const historyRes = await axios.get(`http://localhost:8000/api/stocks/history/${stock.symbol}/`);
+      const historyRes = await axios.get(`http://localhost:8000/api/stocks/history/${stock.symbol}/?period=${selectedPeriod}`);
       setHistoryData(historyRes.data);
       await checkIfInCollection(stock.id);
     } catch (error) {
       console.error('Error fetching stock history:', error);
+      setHistoryError('Could not load chart data. Please try a different stock or period.');
     } finally {
       setHistoryLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedStock) {
+      fetchStockDetails(selectedStock, period);
+    }
+  }, [selectedStock, period]);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -92,7 +103,6 @@ const Stock = () => {
       if (response.data.length > 0) {
         const stock = response.data[0];
         setSelectedStock(stock);
-        fetchStockDetails(stock);
       } else {
         setSelectedStock(null);
         setIsInCollection(false);
@@ -129,7 +139,7 @@ const Stock = () => {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
       <header className="mb-8">
         <h1 className="text-4xl font-extrabold text-gray-900">Market Insights</h1>
-        <p className="text-gray-500 mt-2 font-medium">Search for any stock to view its 30-day moving average and key metrics.</p>
+        <p className="text-gray-500 mt-2 font-medium">Search for any stock to view its historical data and key metrics.</p>
       </header>
 
       <div className="flex flex-col space-y-8">
@@ -197,7 +207,7 @@ const Stock = () => {
                     <span className="text-gray-400 font-bold text-sm">{selectedStock.exchange}</span>
                   </div>
                   <h2 className="text-3xl font-black text-gray-900 leading-tight">{selectedStock.name}</h2>
-                  <p className="text-gray-500 font-bold mt-1 uppercase tracking-tighter">{selectedStock.sector}</p>
+                  <p className="text-gray-500 font-bold mt-1 tracking-tighter">{selectedStock.sector ? selectedStock.sector.toLowerCase() : ''}</p>
                 </div>
                 <div className="mt-8 flex justify-between items-end">
                   <div>
@@ -264,71 +274,99 @@ const Stock = () => {
               </div>
             </div>
 
-            {/* Closing Price Chart */}
+            {/* EDA Charts */}
             <div className="bg-white p-10 rounded-[2rem] shadow-xl border border-gray-100">
               <div className="flex justify-between items-center mb-10">
                 <div>
-                  <h3 className="text-2xl font-black text-gray-900">Price History</h3>
-                  <p className="text-gray-500 font-medium text-sm">Last 60 days closing price for {selectedStock.symbol}</p>
+                  <h3 className="text-2xl font-black text-gray-900">Exploratory Data Analysis</h3>
+                  <p className="text-gray-500 font-medium text-sm">Historical data for {selectedStock.symbol}</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-200"></div>
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Close Price</span>
-                </div>
+                <select
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white"
+                >
+                  <option value="7d">7 Days</option>
+                  <option value="1mo">1 Month</option>
+                  <option value="6mo">6 Months</option>
+                  <option value="1y">1 Year</option>
+                  <option value="5y">5 Years</option>
+                </select>
               </div>
               
-              <div className="h-96 w-full">
+              <div className="h-[600px] w-full">
                 {historyLoading ? (
                   <div className="h-full flex flex-col items-center justify-center text-gray-400 font-bold space-y-4">
                     <RefreshCw className="animate-spin text-green-500" size={40} />
                     <span className="animate-pulse">Analyzing Market Trends...</span>
                   </div>
+                ) : historyError ? (
+                  <div className="h-full flex flex-col items-center justify-center text-red-500 font-bold space-y-2">
+                    <BarChart3 size={48} />
+                    <span>{historyError}</span>
+                  </div>
                 ) : historyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={historyData}>
-                      <defs>
-                        <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#16a34a" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                      <XAxis 
-                        dataKey="date" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} 
-                        dy={15}
-                        interval={Math.ceil(historyData.length / 7)}
-                      />
-                      <YAxis 
-                        hide={true} 
-                        domain={['dataMin * 0.98', 'dataMax * 1.02']} 
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          borderRadius: '24px', 
-                          border: 'none', 
-                          boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.15)',
-                          padding: '16px',
-                          fontWeight: '800'
-                        }}
-                        formatter={(value) => [
-                          `${selectedStock.currency === 'USD' ? '$' : '₹'}${value.toFixed(2)}`, 
-                          'Close Price'
-                        ]}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="close" 
-                        stroke="#16a34a" 
-                        strokeWidth={4} 
-                        fillOpacity={1} 
-                        fill="url(#colorClose)"
-                        animationDuration={1500}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height="70%">
+                      <LineChart data={historyData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                        <XAxis 
+                          dataKey="date" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} 
+                          dy={15}
+                          interval={Math.ceil(historyData.length / 7)}
+                        />
+                        <YAxis 
+                          hide={true} 
+                          domain={['dataMin * 0.95', 'dataMax * 1.05']} 
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            borderRadius: '24px', 
+                            border: 'none', 
+                            boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.15)',
+                            padding: '16px',
+                            fontWeight: '800'
+                          }}
+                        />
+                        <Legend />
+                        <Line type="monotone" dataKey="close" stroke="#10b981" name="Close" strokeWidth={2} />
+                        <Line type="monotone" dataKey="ma20" stroke="#3b82f6" name="20-Day MA" strokeDasharray="5 5" />
+                        <Line type="monotone" dataKey="ma50" stroke="#8b5cf6" name="50-Day MA" strokeDasharray="5 5" />
+                        <Line type="monotone" dataKey="ma200" stroke="#f59e0b" name="200-Day MA" strokeDasharray="5 5" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <ResponsiveContainer width="100%" height="30%">
+                      <BarChart data={historyData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                        <XAxis 
+                          dataKey="date" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} 
+                          dy={15}
+                          interval={Math.ceil(historyData.length / 7)}
+                        />
+                        <YAxis 
+                          hide={true} 
+                          domain={['dataMin', 'dataMax * 2']} 
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            borderRadius: '24px', 
+                            border: 'none', 
+                            boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.15)',
+                            padding: '16px',
+                            fontWeight: '800'
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="volume" fill="#d1d5db" name="Volume" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-gray-400 font-bold space-y-2">
                     <BarChart3 size={48} className="text-gray-200" />
@@ -344,7 +382,7 @@ const Stock = () => {
               <Search size={64} className="text-gray-200" />
             </div>
             <h3 className="text-2xl font-black text-gray-300">Start Your Analysis</h3>
-            <p className="text-gray-400 max-w-xs mt-2 font-medium">Enter a stock ticker or name above to see detailed insights and moving average trends.</p>
+            <p className="text-gray-400 max-w-xs mt-2 font-medium">Enter a stock ticker or name above to see detailed insights and historical data.</p>
           </div>
         )}
       </div>
@@ -353,4 +391,3 @@ const Stock = () => {
 };
 
 export default Stock;
-

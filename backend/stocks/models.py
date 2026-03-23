@@ -20,6 +20,7 @@ class Portfolio(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='portfolios')
     portfolio_id = models.CharField(max_length=20, unique=True, blank=True)
     name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
     stocks = models.ManyToManyField(Stock, through='PortfolioItem', related_name='portfolios')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -47,6 +48,7 @@ class PortfolioItem(models.Model):
 class Collection(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='collections')
     stock = models.ForeignKey(Stock, on_delete=models.CASCADE, related_name='collected_by')
+    portfolio_name = models.CharField(max_length=255, blank=True, null=True)
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

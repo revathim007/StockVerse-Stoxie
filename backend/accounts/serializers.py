@@ -8,6 +8,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    mpin = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    phone_number = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = User
@@ -22,14 +25,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        # Extract custom fields with defaults
+        username = validated_data.pop('username')
+        password = validated_data.pop('password')
+        email = validated_data.pop('email', '')
+        
+        # Create user using the manager
         user = User.objects.create_user(
-            username=validated_data['username'],
-            password=validated_data['password'],
-            email=validated_data.get('email', ''),
-            full_name=validated_data['full_name'],
-            role=validated_data['role'],
-            mpin=validated_data.get('mpin', None),
-            phone_number=validated_data.get('phone_number', None)
+            username=username,
+            password=password,
+            email=email,
+            **validated_data
         )
         return user
 
