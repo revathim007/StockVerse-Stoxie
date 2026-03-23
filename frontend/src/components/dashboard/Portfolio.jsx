@@ -146,6 +146,17 @@ const Portfolio = () => {
     }
   };
 
+  const groupItemsByCategory = (items) => {
+    return items.reduce((groups, item) => {
+      const category = item.stock.sector || 'Uncategorized';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(item);
+      return groups;
+    }, {});
+  };
+
   const getPortfolioColor = (index) => {
     const colors = [
       { border: 'border-blue-100', bg: 'bg-blue-50', text: 'text-blue-600' },
@@ -242,20 +253,24 @@ const Portfolio = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {portfolio.items.slice(0, 3).map((item) => (
-                      <div key={item.stock.id} className="flex items-center space-x-1 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-100">
-                        <span className="text-[10px] font-black text-gray-400 uppercase">
-                          {item.stock.symbol.split('.')[0]}
-                        </span>
-                        <span className={`text-[10px] font-black ${cardColor.text}`}>x{item.quantity}</span>
+                  <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                    {Object.entries(groupItemsByCategory(portfolio.items)).map(([category, items]) => (
+                      <div key={category} className="space-y-2">
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-1">
+                          {category.toLowerCase()}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {items.map((item) => (
+                            <div key={item.stock.id} className="flex items-center space-x-1 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-100">
+                              <span className="text-[10px] font-black text-gray-900 uppercase">
+                                {item.stock.symbol.split('.')[0]}
+                              </span>
+                              <span className={`text-[10px] font-black ${cardColor.text}`}>x{item.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
-                    {portfolio.items.length > 3 && (
-                      <span className="text-[10px] font-black bg-gray-50 text-gray-400 px-2.5 py-1 rounded-md uppercase border border-gray-100">
-                        +{portfolio.items.length - 3} More
-                      </span>
-                    )}
                   </div>
                 </div>
                 
