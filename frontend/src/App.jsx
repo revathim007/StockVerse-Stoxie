@@ -9,6 +9,7 @@ import CustomerWelcome from './components/CustomerWelcome';
 import DashboardHome from './components/dashboard/DashboardHome';
 import Stock from './components/dashboard/Stock';
 import Portfolio from './components/dashboard/Portfolio';
+import BuiltInPortfolios from './components/dashboard/BuiltInPortfolios';
 import Forecast from './components/dashboard/Forecast';
 import SentimentAnalysis from './components/dashboard/SentimentAnalysis';
 import Profile from './components/dashboard/Profile';
@@ -33,6 +34,7 @@ function App() {
             <Route index element={<DashboardHome />} />
             <Route path="stock" element={<ErrorBoundary><Stock /></ErrorBoundary>} />
             <Route path="portfolio" element={<Portfolio />} />
+            <Route path="builtin-portfolios" element={<BuiltInPortfolios />} />
             <Route path="forecast" element={<Forecast />} />
             <Route path="sentiment" element={<SentimentAnalysis />} />
             <Route path="profile" element={<Profile />} />

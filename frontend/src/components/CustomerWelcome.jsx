@@ -33,6 +33,7 @@ const CustomerWelcome = () => {
     { name: 'Dashboard', path: '/customer-welcome', icon: <LayoutDashboard size={20} /> },
     { name: 'Stock', path: '/customer-welcome/stock', icon: <TrendingUp size={20} /> },
     { name: 'Portfolio', path: '/customer-welcome/portfolio', icon: <Briefcase size={20} /> },
+    { name: 'Built-in Portfolios', path: '/customer-welcome/builtin-portfolios', icon: <Layers size={20} /> },
     { name: 'Forecast', path: '/customer-welcome/forecast', icon: <LineChart size={20} /> },
     { name: 'Sentiment Analysis', path: '/customer-welcome/sentiment', icon: <BarChart3 size={20} /> },
   ];
